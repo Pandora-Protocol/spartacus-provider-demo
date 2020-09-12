@@ -1,0 +1,35 @@
+html
+    head
+        title= title
+        script(async, defer, src="https://hcaptcha.com/1/api.js")
+        script(type='text/javascript').
+            console.log("TEST");
+
+            function onSolved(token){
+
+                const xhr = new XMLHttpRequest();
+                const url = window.location.origin+'/sign';
+
+                xhr.responseType = 'json';
+                xhr.open("POST", url);
+
+                xhr.onload = function() {
+                    let responseObj = xhr.response;
+                    alert(responseObj); // Hello, world!
+                };
+
+                const json = JSON.stringify({
+                    hash: document.getElementById('token').value,
+                    token,
+                });
+
+                xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                xhr.send(json);
+
+            }
+
+    body
+
+        input( type="hidden" id="token" value= hash )
+        div( class="h-captcha" data-sitekey= sitekey data-callback="onSolved" )
