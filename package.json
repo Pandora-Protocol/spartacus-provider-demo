@@ -1,0 +1,9 @@
+{
+  "name": "spartacus-provider-demo",
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
