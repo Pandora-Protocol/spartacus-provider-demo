@@ -26,26 +26,33 @@ app.get('/', function (req, res) {
     });
 })
 
-app.get('/challenge/:hash', function (req, res) {
+function challengeHash(req, res){
 
     try{
 
         const {hash} = req.params;
-        if (!hash || hash.length !== 64 )
-            throw "Invalid hash"
+        const includeTime = req.params.includeTime === "1";
+        const showOutput = req.params.showOutput === "1";
 
-        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, hash })
+        if (!hash || hash.length !== 64 ) throw "Invalid hash"
+
+        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, hash, includeTime, showOutput })
 
     }catch(err){
         res.render('error', {title: config.APP, error: err.toString() })
     }
-})
+}
+
+app.get('/challenge/:hash', challengeHash )
+app.get('/challenge/:hash/:includeTime', challengeHash )
+app.get('/challenge/:hash/:includeTime/:showOutput', challengeHash )
 
 app.post('/sign', async function (req, res){
 
     try{
 
         const {hash, token} = req.body;
+        const includeTime = req.body.includeTime === 1;
 
         if (!hash || hash.length !== 64 )
             throw "Invalid Hash";
@@ -54,11 +61,16 @@ app.post('/sign', async function (req, res){
 
         if (!data.success) throw "Invalid token";
 
-        const time = new Date().getTime()/1000;
-        const message = Buffer.concat([
+        const time = Math.floor( new Date().getTime()/1000 );
+
+        const array = [
             Buffer.from(hash, 'hex'),
-            MarshalUtils.marshalNumber(time),
-        ]);
+        ];
+
+        if (includeTime)
+            array.push( MarshalUtils.marshalNumberFixed(time, 7) );
+
+        const message = Buffer.concat(array );
 
         const signature = eccrypto.sign(config.PRIVATE_KEY, CryptoUtils.sha256(message) );
 
@@ -75,7 +87,7 @@ app.post('/sign', async function (req, res){
 
 })
 
-const server = app.listen(8081, function () {
+const server = app.listen( config.PORT, function () {
 
     const host = server.address().address
     const port = server.address().port

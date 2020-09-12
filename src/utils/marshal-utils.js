@@ -1,26 +1,23 @@
 module.exports = {
 
-    marshalNumber(num){
+    marshalNumberFixed( num, length){
 
-        if (num < 0 || num > Number.MAX_SAFE_INTEGER) throw new Error( "Invalid number");
+        if (length > 7) throw "marshalNumberFixed length is way too big";
+        if (!length) throw "marshalNumberFixed length is not specified";
 
-        const b = Buffer.alloc(8);
-        let i, c;
+        const b = Buffer.alloc(length);
 
-        for (i=0; num >= 0x80; i++){
+        let p = length-1;
+        while (num > 0){
 
-            c = (num & 0x7f);
-            b[i] = c | 0x80;
+            b[p] = num % 256;
+            num /= 256;
 
-            num = (num - c) / 0x80;
+            p--;
         }
 
-        b[i] = num;
-        i++;
+        return b;
 
-        const b2 = Buffer.alloc(i);
-        b.copy(b2, 0, 0, i);
-        return b2;
-    },
+    }
 
 }

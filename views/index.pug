@@ -15,12 +15,18 @@ html
                 xhr.open("POST", url);
 
                 xhr.onload = function() {
-                    const responseObj = xhr.response;
-                    console.log(responseObj);
+                    const out = xhr.response;
+                    const outputElement = document.getElementById('output');
+                    if (outputElement){
+                        outputElement.value = JSON.stringify(out)
+                        outputElement.style.display = "inline";
+                    }
+                    console.log(out);
                 };
 
                 const json = JSON.stringify({
                     hash: document.getElementById('token').value,
+                    includeTime: document.getElementById('includeTime').value,
                     token,
                 });
 
@@ -33,4 +39,9 @@ html
     body
 
         input( type="hidden" id="token" value= hash )
+        input( type="hidden" id="includeTime" value= includeTime )
+
         div( class="h-captcha" data-sitekey= sitekey data-callback="onSolved" )
+
+        if showOutput
+          textarea( id="output" style="display: none; width: 400px" )
