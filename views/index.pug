@@ -3,7 +3,8 @@ html
         title= title
         script(async, defer, src="https://hcaptcha.com/1/api.js")
         script(type='text/javascript').
-            console.log("TEST");
+
+            console.log("Initialized");
 
             function onSolved(token){
 
@@ -14,8 +15,8 @@ html
                 xhr.open("POST", url);
 
                 xhr.onload = function() {
-                    let responseObj = xhr.response;
-                    alert(responseObj); // Hello, world!
+                    const responseObj = xhr.response;
+                    console.log(responseObj);
                 };
 
                 const json = JSON.stringify({

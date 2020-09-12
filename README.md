@@ -3,6 +3,21 @@
 This repository is a demo/reference for a spartacus provider against sybil attacks.
 Spartacus is being used by a KAD Network against Sybil attacks. CPU intensive Proof of Work can be used as well.
 
+### Installation
+
+``` 
+git clone https://github.com/Pandora-Protocol/spartacus-provider-demo
+
+cd sparatacus-provider-demo
+npm install
+```
+
+download, and install the other repositories
+```
+npm link pandora-protocol-eccrypto ;
+```
+
+
 
 ## DISCLAIMER: 
 

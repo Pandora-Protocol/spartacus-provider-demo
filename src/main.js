@@ -1,6 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const hcaptcha = require('hcaptcha');
+const eccrypto = require("pandora-protocol-eccrypto");
+
+const MarshalUtils = require('./utils/marshal-utils')
+const CryptoUtils = require('./utils/crypto-utils')
 
 const config = require('../config/config')
 
@@ -23,19 +28,50 @@ app.get('/', function (req, res) {
 
 app.get('/challenge/:hash', function (req, res) {
 
-    const {hash} = req.params;
-    if (!hash || hash.length !== 64 )
-        return res.render('error', {title: config.APP, error: 'Error hash'})
+    try{
 
-    res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, hash })
+        const {hash} = req.params;
+        if (!hash || hash.length !== 64 )
+            throw "Invalid hash"
+
+        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, hash })
+
+    }catch(err){
+        res.render('error', {title: config.APP, error: err.toString() })
+    }
 })
 
-app.post('/sign', function (req, res){
+app.post('/sign', async function (req, res){
 
-    const {hash, token} = req.body;
+    try{
 
-    if (!hash || hash.length !== 64 )
-        return res.render('error', {title: config.APP, error: 'Error hash'})
+        const {hash, token} = req.body;
+
+        if (!hash || hash.length !== 64 )
+            throw "Invalid Hash";
+
+        const data = await hcaptcha.verify( config.HCAPTCHA.SECRET_KEY, token)
+
+        if (!data.success) throw "Invalid token";
+
+        const time = new Date().getTime()/1000;
+        const message = Buffer.concat([
+            Buffer.from(hash, 'hex'),
+            MarshalUtils.marshalNumber(time),
+        ]);
+
+        const signature = eccrypto.sign(config.PRIVATE_KEY, CryptoUtils.sha256(message) );
+
+        res.json({
+            success: true,
+            signature: signature.toString('hex'),
+            time,
+        })
+
+    }catch(err){
+        res.json({ error: err.toString() });
+    }
+
 
 })
 
