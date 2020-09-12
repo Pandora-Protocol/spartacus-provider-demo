@@ -25,7 +25,7 @@ html
                 };
 
                 const json = JSON.stringify({
-                    hash: document.getElementById('token').value,
+                    data: document.getElementById('data').value,
                     includeTime: document.getElementById('includeTime').value,
                     token,
                 });
@@ -38,10 +38,10 @@ html
 
     body
 
-        input( type="hidden" id="token" value= hash )
+        input( type="hidden" id="data" value= data)
         input( type="hidden" id="includeTime" value= includeTime )
 
         div( class="h-captcha" data-sitekey= sitekey data-callback="onSolved" )
 
         if showOutput
-          textarea( id="output" style="display: none; width: 400px" )
+          textarea( id="output" style="display: none; width: 500px; height: 200px" )

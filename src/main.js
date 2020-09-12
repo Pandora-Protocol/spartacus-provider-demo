@@ -26,45 +26,45 @@ app.get('/', function (req, res) {
     });
 })
 
-function challengeHash(req, res){
+function challengeData(req, res){
 
     try{
 
-        const {hash} = req.params;
+        const {data} = req.params;
         const includeTime = req.params.includeTime === "1";
         const showOutput = req.params.showOutput === "1";
 
-        if (!hash || hash.length !== 64 ) throw "Invalid hash"
+        if (!data || !data.length ) throw "Invalid data"
 
-        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, hash, includeTime, showOutput })
+        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, data, includeTime, showOutput })
 
     }catch(err){
         res.render('error', {title: config.APP, error: err.toString() })
     }
 }
 
-app.get('/challenge/:hash', challengeHash )
-app.get('/challenge/:hash/:includeTime', challengeHash )
-app.get('/challenge/:hash/:includeTime/:showOutput', challengeHash )
+app.get('/challenge/:data', challengeData )
+app.get('/challenge/:data/:includeTime', challengeData )
+app.get('/challenge/:data/:includeTime/:showOutput', challengeData )
 
 app.post('/sign', async function (req, res){
 
     try{
 
-        const {hash, token} = req.body;
+        const {data, token} = req.body;
         const includeTime = req.body.includeTime === 1;
 
-        if (!hash || hash.length !== 64 )
-            throw "Invalid Hash";
+        if (!data || !data.length)
+            throw "Invalid Data";
 
-        const data = await hcaptcha.verify( config.HCAPTCHA.SECRET_KEY, token)
+        const verify = await hcaptcha.verify( config.HCAPTCHA.SECRET_KEY, token)
 
-        if (!data.success) throw "Invalid token";
+        if (!verify.success) throw "Invalid token";
 
         const time = Math.floor( new Date().getTime()/1000 );
 
         const array = [
-            Buffer.from(hash, 'hex'),
+            Buffer.from(data, 'hex'),
         ];
 
         if (includeTime)
