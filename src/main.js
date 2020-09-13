@@ -26,36 +26,36 @@ app.get('/', function (req, res) {
     });
 })
 
-function challengeData(req, res){
+function challengeMessage(req, res){
 
     try{
 
-        const {data} = req.params;
+        const {message} = req.params;
         const includeTime = req.params.includeTime === "1";
         const showOutput = req.params.showOutput === "1";
 
-        if (!data || !data.length ) throw "Invalid data"
+        if (!message || !message.length ) throw "Invalid message"
 
-        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, data, includeTime, showOutput })
+        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, message, includeTime, showOutput })
 
     }catch(err){
         res.render('error', {title: config.APP, error: err.toString() })
     }
 }
 
-app.get('/challenge/:data', challengeData )
-app.get('/challenge/:data/:includeTime', challengeData )
-app.get('/challenge/:data/:includeTime/:showOutput', challengeData )
+app.get('/challenge/:message', challengeMessage )
+app.get('/challenge/:message/:includeTime', challengeMessage )
+app.get('/challenge/:message/:includeTime/:showOutput', challengeMessage )
 
 app.post('/sign', async function (req, res){
 
     try{
 
-        const {data, token} = req.body;
+        const {message, token} = req.body;
         const includeTime = req.body.includeTime === 1;
 
-        if (!data || !data.length)
-            throw "Invalid Data";
+        if (!message || !message.length)
+            throw "Invalid message";
 
         const verify = await hcaptcha.verify( config.HCAPTCHA.SECRET_KEY, token)
 
@@ -64,15 +64,15 @@ app.post('/sign', async function (req, res){
         const time = Math.floor( new Date().getTime()/1000 );
 
         const array = [
-            Buffer.from(data, 'hex'),
+            Buffer.from(message, 'hex'),
         ];
 
         if (includeTime)
             array.push( MarshalUtils.marshalNumberFixed(time, 7) );
 
-        const message = Buffer.concat(array );
+        const buffer = Buffer.concat(array );
 
-        const signature = eccrypto.sign(config.PRIVATE_KEY, CryptoUtils.sha256(message) );
+        const signature = eccrypto.sign(config.PRIVATE_KEY, CryptoUtils.sha256(buffer) );
 
         res.json({
             success: true,

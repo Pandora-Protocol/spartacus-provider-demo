@@ -22,10 +22,16 @@ html
                         outputElement.style.display = "inline";
                     }
                     console.log(out);
+
+                    if (window.opener)
+                        window.opener.postMessage({message: 'signed', out: out, message: document.getElementById('message').value }, '*');
+
+                    if (window.parent)
+                        window.parent.postMessage({message: 'signed', out: out, message: document.getElementById('message').value }, '*');
                 };
 
                 const json = JSON.stringify({
-                    data: document.getElementById('data').value,
+                    message: document.getElementById('message').value,
                     includeTime: document.getElementById('includeTime').value,
                     token,
                 });
@@ -38,10 +44,10 @@ html
 
     body
 
-        input( type="hidden" id="data" value= data)
+        input( type="hidden" id="message" value= message)
         input( type="hidden" id="includeTime" value= includeTime )
 
-        div( class="h-captcha" data-sitekey= sitekey data-callback="onSolved" )
+        div( class="h-captcha" data-sitekey= sitekey data-callback="onSolved" data-size="compact" )
 
         if showOutput
           textarea( id="output" style="display: none; width: 500px; height: 200px" )
