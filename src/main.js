@@ -34,9 +34,10 @@ function challengeMessage(req, res){
         const includeTime = req.params.includeTime === "1";
         const showOutput = req.params.showOutput === "1";
 
-        if (!message || !message.length ) throw "Invalid message"
+        if (!message || message.length !== 64)
+            throw "Invalid message";
 
-        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, message, includeTime, showOutput })
+        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, message, includeTime: includeTime.toString(), showOutput })
 
     }catch(err){
         res.render('error', {title: config.APP, error: err.toString() })
@@ -51,10 +52,12 @@ app.post('/sign', async function (req, res){
 
     try{
 
-        const {message, token} = req.body;
-        const includeTime = req.body.includeTime === 1;
+        const { token} = req.body;
+        let message = Buffer.from(req.body.message, 'hex');
 
-        if (!message || !message.length)
+        const includeTime = req.body.includeTime === "true";
+
+        if (!message || message.length !== 32)
             throw "Invalid message";
 
         const verify = await hcaptcha.verify( config.HCAPTCHA.SECRET_KEY, token)
@@ -63,21 +66,18 @@ app.post('/sign', async function (req, res){
 
         const time = Math.floor( new Date().getTime()/1000 );
 
-        const array = [
-            Buffer.from(message, 'hex'),
-        ];
-
         if (includeTime)
-            array.push( MarshalUtils.marshalNumberFixed(time, 7) );
+            message = CryptoUtils.sha256( Buffer.concat( [
+                message,
+                MarshalUtils.marshalNumberFixed( time, 7),
+            ]) );
 
-        const buffer = Buffer.concat(array );
-
-        const signature = eccrypto.sign(config.PRIVATE_KEY, CryptoUtils.sha256(buffer) );
+        const signature = eccrypto.sign(config.PRIVATE_KEY, message );
 
         res.json({
             success: true,
             signature: signature.toString('hex'),
-            time,
+            time: (includeTime ? time : undefined),
         })
 
     }catch(err){
