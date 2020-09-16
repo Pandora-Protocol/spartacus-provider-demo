@@ -26,58 +26,71 @@ app.get('/', function (req, res) {
     });
 })
 
-function challengeMessage(req, res){
+function challengeData(req, res){
 
     try{
 
-        const {message} = req.params;
-        const includeTime = req.params.includeTime === "1";
-        const showOutput = req.params.showOutput === "1";
+        const json = req.params.json;
+        if (!json) throw "data arguments are missing"
 
-        if (!message || message.length !== 64)
+        const obj = JSON.parse(json);
+        if (!obj) throw "json is invalid";
+
+        const {data, params} = obj;
+        if (!data || !params) throw "data or params are missing or invalid";
+
+        if (!data.message || data.message.length !== 64)
             throw "Invalid message";
 
-        res.render('index', { title: config.APP, sitekey: config.HCAPTCHA.SITE_KEY, message, includeTime: includeTime.toString(), showOutput })
-
+        res.render('index', {
+            title: config.APP,
+            sitekey: config.HCAPTCHA.SITE_KEY,
+            data: encodeURI(JSON.stringify(data)),
+            params: encodeURI(JSON.stringify(params)),
+            showOutput: params.showOutput
+        })
     }catch(err){
         res.render('error', {title: config.APP, error: err.toString() })
     }
 }
 
-app.get('/challenge/:message', challengeMessage )
-app.get('/challenge/:message/:includeTime', challengeMessage )
-app.get('/challenge/:message/:includeTime/:showOutput', challengeMessage )
+app.get('/challenge/:json', challengeData )
 
 app.post('/sign', async function (req, res){
 
     try{
 
-        const { token} = req.body;
-        let message = Buffer.from(req.body.message, 'hex');
+        const { token, data, params} = req.body;
 
-        const includeTime = req.body.includeTime === "true";
+        data.message = Buffer.from(data.message, 'hex')
 
-        if (!message || message.length !== 32)
+        if (!data.message || data.message.length !== 32)
             throw "Invalid message";
+
+        let message = [
+            data.message,
+        ]
 
         const verify = await hcaptcha.verify( config.HCAPTCHA.SECRET_KEY, token)
 
         if (!verify.success) throw "Invalid token";
 
-        const time = Math.floor( new Date().getTime()/1000 );
+        let time;
+        if (params.includeTime) {
+            time = Math.floor( new Date().getTime()/1000 );
+            message.push( MarshalUtils.marshalNumberFixed(time, 7) );
+        }
 
-        if (includeTime)
-            message = CryptoUtils.sha256( Buffer.concat( [
-                message,
-                MarshalUtils.marshalNumberFixed( time, 7),
-            ]) );
+        message = Buffer.concat(message);
+        if (message.length !== 32)
+            message = CryptoUtils.sha256(message);
 
         const signature = eccrypto.sign(config.PRIVATE_KEY, message );
 
         res.json({
             success: true,
             signature: signature.toString('hex'),
-            time: (includeTime ? time : undefined),
+            time,
         })
 
     }catch(err){

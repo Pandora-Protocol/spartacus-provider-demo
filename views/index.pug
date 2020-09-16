@@ -1,10 +1,15 @@
 html
     head
         title= title
+
         script(async, defer, src="https://hcaptcha.com/1/api.js")
+
         script(type='text/javascript').
 
-            console.log("Initialized");
+            const data= JSON.parse( decodeURI("#{data}") );
+            const params= JSON.parse( decodeURI( "#{params}") );
+
+            console.log("Initialized", data, params);
 
             function onSolved(token){
 
@@ -24,16 +29,16 @@ html
                     console.log(out);
 
                     if (window.opener)
-                        window.opener.postMessage({message: 'signed', out: out, message: document.getElementById('message').value }, '*');
+                        window.opener.postMessage({message: 'signed', out: out, data, params }, '*');
 
                     if (window.parent)
-                        window.parent.postMessage({message: 'signed', out: out, message: document.getElementById('message').value }, '*');
+                        window.parent.postMessage({message: 'signed', out: out, data, params }, '*');
                 };
 
                 const json = JSON.stringify({
-                    message: document.getElementById('message').value,
-                    includeTime: document.getElementById('includeTime').value,
                     token,
+                    data,
+                    params,
                 });
 
                 xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
@@ -43,9 +48,6 @@ html
             }
 
     body
-
-        input( type="hidden" id="message" value= message)
-        input( type="hidden" id="includeTime" value= includeTime )
 
         div( class="h-captcha" data-sitekey= sitekey data-callback="onSolved" data-size="compact" )
 
