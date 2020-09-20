@@ -78,7 +78,7 @@ app.post('/sign', async function (req, res){
         let time;
         if (params.includeTime) {
             time = Math.floor( new Date().getTime()/1000 );
-            message.push( MarshalUtils.marshalNumberFixed(time, 7) );
+            message.push( MarshalUtils.marshalNumberBufferFast(time) );
         }
 
         message = Buffer.concat(message);
