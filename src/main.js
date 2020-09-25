@@ -12,6 +12,7 @@ const config = require('../config/config')
 console.log("Spartacus Provider Demo started")
 
 const app = express();
+config.PUBLIC_KEY = Buffer.from( eccrypto.getPublic( config.PRIVATE_KEY ) );
 
 // middleware
 app.use(cors());
@@ -75,22 +76,55 @@ app.post('/sign', async function (req, res){
 
         if (!verify.success) throw "Invalid token";
 
-        let time;
+        const otherData = {};
+
         if (params.includeTime) {
-            time = Math.floor( new Date().getTime()/1000 );
-            message.push( MarshalUtils.marshalNumberBufferFast(time) );
+            const time = Math.floor( new Date().getTime()/1000 );
+            message.push( MarshalUtils.marshalNumberFixed(time) );
+            otherData.time = time;
+        }
+        if (params.includeVotes){
+
+
+            if (typeof params.oldVotes.votesCount !== "number") throw "votes count is invalid";
+            if (typeof params.oldVotes.votesDown !== "number") throw "votes down is invalid";
+
+            if (params.oldVotes.votesCount > 0) {
+
+                let oldMessage = [
+                    data.message,
+                    MarshalUtils.marshalNumberFixed(params.oldVotes.time),
+                    MarshalUtils.marshalNumberFixed(params.oldVotes.votesCount),
+                    MarshalUtils.marshalNumberFixed(params.oldVotes.votesDown),
+                ]
+
+                oldMessage = Buffer.concat(oldMessage);
+                if (oldMessage.length !== 32) oldMessage = CryptoUtils.sha256(oldMessage);
+
+                const signature = Buffer.from(params.oldVotes.signature, 'hex');
+                const verify = eccrypto.verify(config.PUBLIC_KEY, oldMessage, signature);
+                if (!verify) throw "Signature is invalid";
+            }
+
+            const votesCount = params.oldVotes.votesCount + 1;
+            const votesDown  = params.oldVotes.votesDown + ( params.vote ? 0 : 1 );
+
+            message.push( MarshalUtils.marshalNumberFixed( votesCount ) );
+            message.push( MarshalUtils.marshalNumberFixed( votesDown ) );
+
+            otherData.votesCount = votesCount;
+            otherData.votesDown = votesDown;
         }
 
         message = Buffer.concat(message);
-        if (message.length !== 32)
-            message = CryptoUtils.sha256(message);
+        if (message.length !== 32) message = CryptoUtils.sha256(message);
 
         const signature = eccrypto.sign(config.PRIVATE_KEY, message );
 
         res.json({
             success: true,
             signature: signature.toString('hex'),
-            time,
+            ...otherData,
         })
 
     }catch(err){
